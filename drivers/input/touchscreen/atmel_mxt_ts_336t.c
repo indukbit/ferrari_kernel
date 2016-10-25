@@ -5111,11 +5111,9 @@ static int fb_notifier_cb(struct notifier_block *self,
 
 	if (evdata && evdata->data && event == FB_EVENT_BLANK && mxt_data) {
 		blank = evdata->data;
-		if (*blank == FB_BLANK_UNBLANK) {
-			dev_dbg(&mxt_data->client->dev, "##### UNBLANK SCREEN #####\n");
+		if (*blank == FB_BLANK_UNBLANK || *blank == FB_BLANK_NORMAL) {
 			mxt_input_enable(mxt_data->input_dev);
 		} else if (*blank == FB_BLANK_POWERDOWN) {
-			dev_dbg(&mxt_data->client->dev, "##### BLANK SCREEN #####\n");
 			mxt_input_disable(mxt_data->input_dev);
 		}
 	}
