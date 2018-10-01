@@ -6,6 +6,7 @@
  *  Copyright © 2003  Ian Molton <spyro@f2s.com>
  *
  *  Modified: 2004, Oct     Szabolcs Gyurko
+ *  Copyright (C) 2015 XiaoMi, Inc.
  *
  *  You may use this code as per GPL version 2
  */
@@ -314,6 +315,8 @@ extern int power_supply_register(struct device *parent,
 				 struct power_supply *psy);
 extern void power_supply_unregister(struct power_supply *psy);
 extern int power_supply_powers(struct power_supply *psy, struct device *dev);
+extern int register_power_supply_notifier(struct notifier_block*);
+extern int unregister_power_supply_notifier(struct notifier_block*);
 #else
 static inline struct power_supply *power_supply_get_by_name(char *name)
 							{ return NULL; }
@@ -364,6 +367,10 @@ static inline int power_supply_register(struct device *parent,
 static inline void power_supply_unregister(struct power_supply *psy) { }
 static inline int power_supply_powers(struct power_supply *psy,
 				      struct device *dev)
+							{ return -ENOSYS; }
+extern int register_power_supply_notifier(struct notifier_block*)
+							{ return -ENOSYS; }
+extern int unregister_power_supply_notifier(struct notifier_block*)
 							{ return -ENOSYS; }
 #endif
 
