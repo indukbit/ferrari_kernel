@@ -140,6 +140,8 @@ fw-shipped-$(CONFIG_TOUCHSCREEN_ATMEL_336T) += \
 	xiaomi/ferrari/mxt_336t_biel_config.fw \
 	xiaomi/ferrari/mxt_336t_tpk_config.fw \
 	xiaomi/ferrari/mXT336T21AA.fw
+fw-shipped-$(CONFIG_TOUCHSCREEN_FT5X06) += \
+	xiaomi/ferrari/ft5x46_lens.fw
 
 fw-shipped-all := $(fw-shipped-y) $(fw-shipped-m) $(fw-shipped-)
 
