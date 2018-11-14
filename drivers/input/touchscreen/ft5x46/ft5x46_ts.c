@@ -260,6 +260,7 @@ struct ft5x46_data {
 	u8 lockdown_info[FT5X46_LOCKDOWN_INFO_SIZE];
 	u8 config_info[FT5X46_CONFIG_INFO_SIZE];
 	bool wakeup_mode;
+	bool disable_keys;
 
 	struct pinctrl *ts_pinctrl;
 	struct pinctrl_state *gpio_state_active;
@@ -981,6 +982,20 @@ static void ft5x46_report_value(struct ft5x46_data *ft5x46)
 	int up_point = 0;
 
 	for (i = 0; i < event->touch_point; i++) {
+		/* NB: gen_vkeys generates ft5x46 from dt data, without jumping
+		 * through hoops, lets just reuse the values until something in
+		 * dt changes.
+		 *
+		 * 0x01:139:180:2000:360:128
+		 * 0x01:102:540:2000:360:128
+		 * 0x01:158:900:2000:360:128
+		 *
+		 */
+		if (ft5x46->disable_keys && event->y[i] >= (2000 - (128 / 2))) {
+			dev_info(ft5x46->dev, "keyarray is disabled\n");
+			return;
+		}
+
 		input_mt_slot(ft5x46->input, event->finger_id[i]);
 
 		if (event->touch_event[i] == 0 || event->touch_event[i] == 2) {
@@ -1726,6 +1741,30 @@ static ssize_t ft5x46_wakeup_mode_show(struct device *dev,
 	return sprintf(buf, "%d\n", (int)ft5x46->wakeup_mode);
 }
 
+static ssize_t ft5x46_disable_keys_store(struct device *dev,
+				struct device_attribute *attr,
+				const char *buf, size_t count)
+{
+	int error;
+	unsigned long val;
+	struct ft5x46_data *ft5x46 = dev_get_drvdata(dev);
+
+	error = strict_strtoul(buf, 0, &val);
+
+	if (!error)
+		ft5x46->disable_keys = !!val;
+
+	return error ? : count;
+}
+
+static ssize_t ft5x46_disable_keys_show(struct device *dev,
+				struct device_attribute *attr, char *buf)
+{
+	struct ft5x46_data *ft5x46 = dev_get_drvdata(dev);
+
+	return sprintf(buf, "%d\n", (int)ft5x46->disable_keys);
+}
+
 /* sysfs */
 #ifdef FT5X46_DEBUG_PERMISSION
 static DEVICE_ATTR(tpfwver, 0666, ft5x46_tpfwver_show, NULL);
@@ -1737,6 +1776,7 @@ static DEVICE_ATTR(selftest, 0666, ft5x46_selftest_show, ft5x46_selftest_store);
 static DEVICE_ATTR(lockdown_info, 0666, ft5x46_lockdown_info_show, ft5x46_lockdown_info_store);
 static DEVICE_ATTR(config_info, 0666, ft5x46_config_info_show, NULL);
 static DEVICE_ATTR(wakeup_mode, 0666, ft5x46_wakeup_mode_show, ft5x46_wakeup_mode_store);
+static DEVICE_ATTR(disable_keys, 0666, ft5x46_disable_keys_show, ft5x46_disable_keys_store);
 #else
 static DEVICE_ATTR(tpfwver, 0644, ft5x46_tpfwver_show, NULL);
 static DEVICE_ATTR(object, 0644, ft5x46_object_show, ft5x46_object_store);
@@ -1747,6 +1787,7 @@ static DEVICE_ATTR(selftest, 0644, ft5x46_selftest_show, ft5x46_selftest_store);
 static DEVICE_ATTR(lockdown_info, 0644, ft5x46_lockdown_info_show, ft5x46_lockdown_info_store);
 static DEVICE_ATTR(config_info, 0644, ft5x46_config_info_show, NULL);
 static DEVICE_ATTR(wakeup_mode, 0644, ft5x46_wakeup_mode_show, ft5x46_wakeup_mode_store);
+static DEVICE_ATTR(disable_keys, 0644, ft5x46_disable_keys_show, ft5x46_disable_keys_store);
 #endif
 
 static struct attribute *ft5x46_attrs[] = {
@@ -1759,6 +1800,7 @@ static struct attribute *ft5x46_attrs[] = {
 	&dev_attr_lockdown_info.attr,
 	&dev_attr_config_info.attr,
 	&dev_attr_wakeup_mode.attr,
+	&dev_attr_disable_keys.attr,
 	NULL
 };
 
