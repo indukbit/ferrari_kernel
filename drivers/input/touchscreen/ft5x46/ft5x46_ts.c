@@ -176,7 +176,7 @@
 #define FT5X46_PROC_READ_DATA		7
 
 #define FT5X46_GESTURE_POINTS_HEADER	8
-#define FT5X46_GESTURE_UP		0x22
+#define FT5X46_GESTURE_DBLCLICK		0x24
 
 #define FT5X46_INPUT_EVENT_START			0
 #define FT5X46_INPUT_EVENT_SENSITIVE_MODE_OFF		0
@@ -1020,7 +1020,7 @@ static int ft5x46_read_gesture(struct ft5x46_data *ft5x46)
 	dev_info(ft5x46->dev, "Gesture ID = %d, Point num = %d\n", buf[0],
 			buf[1]);
 
-	if (buf[0] == FT5X46_GESTURE_UP) {
+	if (buf[0] == FT5X46_GESTURE_DBLCLICK) {
 		dev_err(ft5x46->dev, "input report key wakeup\n");
 		input_event(ft5x46->input, EV_KEY, KEY_POWER, 1);
 		input_sync(ft5x46->input);
@@ -1078,7 +1078,7 @@ int ft5x46_suspend(struct ft5x46_data *ft5x46)
 	if (ft5x46->wakeup_mode) {
 		dev_info(ft5x46->dev, "enter wakeup gesture mode\n");
 		error = ft5x46_write_byte(ft5x46, 0xD0, 0x01);	/* Enable wakeup gesture */
-		error |= ft5x46_write_byte(ft5x46, 0xD1, 0x04);	/* Only enable swipe up gesture */
+		error |= ft5x46_write_byte(ft5x46, 0xD1, 0x04);	/* Only enable double click gesture */
 	} else {
 		error = ft5x46_write_byte(ft5x46,
 				FT5X0X_ID_G_PMODE, FT5X0X_POWER_HIBERNATE);
