@@ -20,6 +20,7 @@
 #include <linux/gpio.h>
 #include <linux/init.h>
 #include <linux/of_gpio.h>
+#include <linux/proc_fs.h>
 #include <linux/regulator/consumer.h>
 #include <linux/firmware.h>
 #include <linux/debugfs.h>
@@ -2501,6 +2502,62 @@ int ft5x46_pm_resume(struct device *dev)
 EXPORT_SYMBOL_GPL(ft5x46_pm_resume);
 #endif
 
+static int ft5x46_proc_init(struct kobject *sysfs_node_parent)
+{
+	int ret = 0;
+	char *buf, *path = NULL;
+	char *sysfs_node;
+
+	struct proc_dir_entry *proc_entry_tp = NULL;
+	struct proc_dir_entry *proc_symlink_tmp = NULL;
+
+	buf = kzalloc(PATH_MAX, GFP_KERNEL);
+	if (!buf) {
+		ret = -ENOMEM;
+		goto exit;
+	}
+
+	sysfs_node = kzalloc(PATH_MAX, GFP_KERNEL);
+	if (!sysfs_node) {
+		ret = -ENOMEM;
+		kfree(buf);
+		goto exit;
+	}
+
+	path = kobject_get_path(sysfs_node_parent, GFP_KERNEL);
+
+	proc_entry_tp = proc_mkdir("touchpanel", NULL);
+	if (proc_entry_tp == NULL) {
+		ret = -ENOMEM;
+		pr_err("%s: Couldn't create touchpanel\n", __func__);
+		goto free;
+	}
+
+
+	snprintf(sysfs_node, PATH_MAX, "/sys%s/%s", path, "wakeup_mode");
+	proc_symlink_tmp = proc_symlink("double_tap_enable",
+			proc_entry_tp, sysfs_node);
+	if (proc_symlink_tmp == NULL) {
+		ret = -ENOMEM;
+		pr_err("%s: Couldn't create double_tap_enable symlink\n", __func__);
+	}
+
+	snprintf(sysfs_node, PATH_MAX, "/sys%s/%s", path, "disable_keys");
+	proc_symlink_tmp = proc_symlink("disable_keys",
+			proc_entry_tp, sysfs_node);
+	if (proc_symlink_tmp == NULL) {
+		ret = -ENOMEM;
+		pr_err("%s: Couldn't create double_tap_enable symlink\n", __func__);
+	}
+
+free:
+	kfree(sysfs_node);
+	kfree(buf);
+
+exit:
+	return ret;
+}
+
 struct ft5x46_data *ft5x46_probe(struct device *dev,
 				const struct ft5x46_bus_ops *bops)
 {
@@ -2712,6 +2769,8 @@ struct ft5x46_data *ft5x46_probe(struct device *dev,
 		dev_err(dev, "fail to export sysfs entires\n");
 		goto err_free_irq;
 	}
+
+	ft5x46_proc_init(&dev->kobj);
 
 	error = ft5x46_configure_sleep(ft5x46, true);
 	if (error) {
